@@ -380,9 +380,9 @@ abstract class Ardent extends Model {
 		// for the related models and returns the relationship instance which will
 		// actually be responsible for retrieving and hydrating every relations.
 		$instance = new $related;
-		
+
 		$otherKey = $otherKey ?: $instance->getKeyName();
-		
+
 		$query = $instance->newQuery();
 
 		return new BelongsTo($query, $this, $foreignKey, $otherKey, $relation);
@@ -398,27 +398,64 @@ abstract class Ardent extends Model {
 	 * @param  string  $id
 	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
 	 */
-	public function morphTo($name = null, $type = null, $id = null) {
-		// If no name is provided, we will use the backtrace to get the function name
-		// since that is most likely the name of the polymorphic interface. We can
-		// use that to get both the class and foreign key that will be utilized.
-		if (is_null($name))
-		{
-			$backtrace = debug_backtrace(false);
-			$caller = ($backtrace[1]['function'] == 'handleRelationalArray')? $backtrace[3] : $backtrace[1];
+    public function morphTo($name = null, $type = null, $id = null)
+    {
+        // If no name is provided, we will use the backtrace to get the function name
+        // since that is most likely the name of the polymorphic interface. We can
+        // use that to get both the class and foreign key that will be utilized.
+        if (is_null($name))
+        {
+            $backtrace = debug_backtrace(false);
+            $caller = ($backtrace[1]['function'] == 'handleRelationalArray')? $backtrace[3] : $backtrace[1];
 
-			$name = snake_case($caller['function']);
-		}
+            $name = snake_case($caller['function']);
+        }
 
-		// Next we will guess the type and ID if necessary. The type and IDs may also
-		// be passed into the function so that the developers may manually specify
-		// them on the relations. Otherwise, we will just make a great estimate.
-		list($type, $id) = $this->getMorphs($name, $type, $id);
+        // Next we will guess the type and ID if necessary. The type and IDs may also
+        // be passed into the function so that the developers may manually specify
+        // them on the relations. Otherwise, we will just make a great estimate.
+        list($type, $id) = $this->getMorphs($name, $type, $id);
 
-		$class = $this->$type;
+        if( ! $this->exists)
+        {
+            // Return "fake" relationship so the builder gets a chance to try again
+            return new MorphTo($this->newQuery(), $this, $id, 'id', $type);
+        }
 
-		return $this->belongsTo($class, $id);
-	}
+        $class = $this->$type;
+
+        $instance = new $class;
+
+        // Once we have the foreign key names, we'll just create a new Eloquent query
+        // for the related models and returns the relationship instance which will
+        // actually be responsible for retrieving and hydrating every relations.
+        $query = $instance->newQuery();
+
+        $otherKey = $instance->getKeyName();
+
+        return new MorphTo($query, $this, $id, $otherKey, $type);
+    }
+//	public function morphTo($name = null, $type = null, $id = null) {
+//		// If no name is provided, we will use the backtrace to get the function name
+//		// since that is most likely the name of the polymorphic interface. We can
+//		// use that to get both the class and foreign key that will be utilized.
+//		if (is_null($name))
+//		{
+//			$backtrace = debug_backtrace(false);
+//			$caller = ($backtrace[1]['function'] == 'handleRelationalArray')? $backtrace[3] : $backtrace[1];
+//
+//			$name = snake_case($caller['function']);
+//		}
+//
+//		// Next we will guess the type and ID if necessary. The type and IDs may also
+//		// be passed into the function so that the developers may manually specify
+//		// them on the relations. Otherwise, we will just make a great estimate.
+//		list($type, $id) = $this->getMorphs($name, $type, $id);
+//
+//		$class = $this->$type;
+//
+//		return $this->belongsTo($class, $id);
+//	}
 
     /**
      * Get an attribute from the model.
@@ -456,7 +493,7 @@ abstract class Ardent extends Model {
 
         // Make this Capsule instance available globally via static methods
         $db->setAsGlobal();
-        
+
         $db->bootEloquent();
 
         $translator = new Translator('en');
@@ -769,7 +806,7 @@ abstract class Ardent extends Model {
      * @return array Rules with exclusions applied
      */
     protected function buildUniqueExclusionRules(array $rules = array()) {
-      
+
         if (!count($rules))
           $rules = static::$rules;
 
@@ -782,14 +819,14 @@ abstract class Ardent extends Model {
                 $params = explode(',', $rule);
 
                 $uniqueRules = array();
-                
+
                 // Append table name if needed
                 $table = explode(':', $params[0]);
                 if (count($table) == 1)
                   $uniqueRules[1] = $this->table;
                 else
                   $uniqueRules[1] = $table[1];
-               
+
                 // Append field name if needed
                 if (count($params) == 1)
                   $uniqueRules[2] = $field;
@@ -803,13 +840,13 @@ abstract class Ardent extends Model {
                 else {
                   $uniqueRules[3] = $this->id;
                 }
-       
-                $rule = 'unique:' . implode(',', $uniqueRules);  
+
+                $rule = 'unique:' . implode(',', $uniqueRules);
               } // end if strpos unique
-              
+
             } // end foreach ruleset
         }
-        
+
         return $rules;
     }
 
@@ -831,7 +868,7 @@ abstract class Ardent extends Model {
         Closure $afterSave = null
     ) {
         $rules = $this->buildUniqueExclusionRules($rules);
-        
+
         return $this->save($rules, $customMessages, $options, $beforeSave, $afterSave);
     }
 
