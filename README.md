@@ -11,6 +11,13 @@ Copyright (C) 2013 Max Ehsan <[http://laravelbook.com/](http://laravelbook.com/)
 Add `laravelbook/ardent` as a requirement to `composer.json`:
 
 ```javascript
+"repositories": [
+	{
+		"type": "vcs",
+		"url": "https://github.com/Stamy/ardent"
+	}
+]
+...
 {
     "require": {
         "laravelbook/ardent": "dev-master"
