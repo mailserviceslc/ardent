@@ -435,6 +435,7 @@ abstract class Ardent extends Model {
 
         return new MorphTo($query, $this, $id, $otherKey, $type);
     }
+
 //	public function morphTo($name = null, $type = null, $id = null) {
 //		// If no name is provided, we will use the backtrace to get the function name
 //		// since that is most likely the name of the polymorphic interface. We can
